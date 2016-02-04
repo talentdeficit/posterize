@@ -185,7 +185,7 @@ defmodule :posterize do
     `start_link/1`, see `DBConnection`
   
   ## examples
- 
+
       {ok, Query} = posterize:prepare(Conn, "CREATE TABLE posts (id serial, title text)"),
       ok = posterize:close(Conn, Query).
   """
@@ -229,7 +229,7 @@ defmodule :posterize do
   requests inside the transaction function
   
   ## example
-      
+
       Fun = fun(Conn) -> posterize:query(Conn, "SELECT title FROM posts", []) end,
       {ok, Result} = posterize:transaction(Conn, Fun).
   """
