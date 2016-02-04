@@ -2,9 +2,9 @@
 
 [![Build Status](https://travis-ci.org/talentdeficit/posterize.svg?branch=master)](https://travis-ci.org/talentdeficit/posterize)
 
-an erlang wrapper for [postgrex][https://github.com/ericmj/postgrex]
+an erlang wrapper for [postgrex](https://github.com/ericmj/postgrex)
 
-documentation: http://hexdocs.pm/posterize/
+documentation at [hexdocs](http://hexdocs.pm/posterize/)
 
 ## data representation
 
@@ -27,3 +27,7 @@ documentation: http://hexdocs.pm/posterize/
 * ranges, numerics, time zones and all the other missing data types
 * figure out how to encode/decode `undefined` instead of `nil`
 * more tests, especially integration
+
+## acknowledgments
+
+this thing definotely wouldn't exist without [ericmj](https://github.com/ericmj) and [fishcakez](https://github.com/fishcakez). all credit to them

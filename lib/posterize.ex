@@ -90,7 +90,6 @@ defmodule :posterize do
       posterize:query(Conn, "SELECT title FROM posts", []).
 
       posterize:query(Conn, "SELECT id FROM posts WHERE title like $1", [<<"%my%">>]).
-
   """
   @spec query(conn, iodata, list, Keyword.t) :: {:ok, Postgrex.Result.t} | {:error, String.t}
   def query(conn, statement, params, opts \\ []) do
@@ -180,7 +179,7 @@ defmodule :posterize do
     `start_link/1`, see `DBConnection`
   
   ## examples
-      
+ 
       {ok, Query} = posterize:prepare(Conn, "CREATE TABLE posts (id serial, title text)"),
       ok = posterize:close(Conn, Query).
   """
@@ -214,7 +213,7 @@ defmodule :posterize do
     * `queue` - Whether to wait for connection in a queue (default: `true`);
     * `timeout` - Transaction timeout (default: `#{@timeout}`);
     * `pool` - The pool module to use, must match that set on
-    `start_link/1`, see `DBConnection;
+    `start_link/1`, see `DBConnection`
     * `mode` - Set to `savepoint` to use savepoints instead of an SQL
     transaction, otherwise set to `transaction` (default: `transaction`);
   
