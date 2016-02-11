@@ -69,7 +69,7 @@ defmodule :posterize do
   encodes and decodes erlang values by default
 
   ## options
-  
+
   options are a proplist where the following keys are valid
 
     * `pool_timeout` - time to wait in the queue for the connection
@@ -134,7 +134,7 @@ defmodule :posterize do
   `Postgrex.Result` for the result data.
 
   ## options
-  
+
   options are a proplist where the following keys are valid
 
     * `pool_timeout` - Time to wait in the queue for the connection
@@ -166,20 +166,20 @@ defmodule :posterize do
   `{error, Error`} if there was an error. Closing a query releases
   any resources held by postgresql for a prepared query with that name. See
   `Postgrex.Query` for the query data.
-  
+
   ## options
 
   options are a proplist where the following keys are valid
-  
+
     * `pool_timeout` - Time to wait in the queue for the connection
     (default: `#{@pool_timeout}`)
     * `queue` - Whether to wait for connection in a queue (default: `true`);
     * `timeout` - Close request timeout (default: `#{@timeout}`);
     * `pool` - The pool module to use, must match that set on
     `start_link/1`, see `DBConnection`
-  
+
   ## examples
- 
+
       {ok, Query} = posterize:prepare(Conn, "CREATE TABLE posts (id serial, title text)"),
       ok = posterize:close(Conn, Query).
   """
@@ -193,7 +193,7 @@ defmodule :posterize do
   acquire a lock on a connection and run a series of requests inside a
   transaction. the result of the transaction fun is return inside an `ok`
   tuple: `{ok, Result}`
-  
+
   to use the locked connection call the request with the connection
   reference passed as the single argument to the `Fun`. if the
   connection disconnects all future calls using that connection
@@ -203,11 +203,11 @@ defmodule :posterize do
   `transaction/3` can be nested multiple times if the connection
   reference is used to start a nested transaction. the top level
   transaction function is the actual transaction
-  
+
   ## options
-  
-  options are a proplist where the following keys are valid  
-  
+
+  options are a proplist where the following keys are valid
+
     * `pool_timeout` - Time to wait in the queue for the connection
     (default: `#{@pool_timeout}`)
     * `queue` - Whether to wait for connection in a queue (default: `true`);
@@ -216,14 +216,14 @@ defmodule :posterize do
     `start_link/1`, see `DBConnection`
     * `mode` - Set to `savepoint` to use savepoints instead of an SQL
     transaction, otherwise set to `transaction` (default: `transaction`);
-  
+
   the `timeout` is for the duration of the transaction and all nested
   transactions and requests. this timeout overrides timeouts set by internal
   transactions and requests. the `pool` and `mode` will be used for all
   requests inside the transaction function
-  
+
   ## example
-      
+
       Fun = fun(Conn) -> posterize:query(Conn, "SELECT title FROM posts", []) end,
       {ok, Result} = posterize:transaction(Conn, Fun).
   """
@@ -237,7 +237,7 @@ defmodule :posterize do
   rollback a transaction, does not return
   aborts the current transaction fun. if inside multiple `transaction/3`
   functions, bubbles up to the top level
-  
+
   ## example
       {error, oops} = posterize:transaction(Conn, fun(Conn) ->
         posterize:rollback(Conn, :bar),
@@ -253,7 +253,7 @@ defmodule :posterize do
 
   ## options
 
-  options are a proplist where the following keys are valid 
+  options are a proplist where the following keys are valid
 
     * `timeout` - Call timeout (default: `#{@timeout}`)
   """
