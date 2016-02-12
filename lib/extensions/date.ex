@@ -7,7 +7,7 @@ defmodule Posterize.Extensions.Date do
   @date_max_year 5874897
 
   def encode(_, {year, month, day}, _, _)
-  when year <= @date_max_year do
+  when year <= @date_max_year and month in 1..12 and day in 1..31 do
     date = {year, month, day}
     << :calendar.date_to_gregorian_days(date) - @gd_epoch :: int32 >>
   end

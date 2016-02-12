@@ -9,7 +9,7 @@ defmodule Posterize.Extensions.DateTime do
   @usec_per_second 1000000
 
   def encode(_, {{year, month, day}, {hour, min, sec}}, _, _)
-  when year <= @timestamp_max_year and hour in 0..23 and min in 0..59 and sec in 0..59 do
+  when year <= @timestamp_max_year and month in 1..12 and day in 1..31 and hour in 0..23 and min in 0..59 and sec in 0..59 do
     datetime = {{year, month, day}, {hour, min, sec}}
     gregorian_seconds = :calendar.datetime_to_gregorian_seconds(datetime) - @gs_epoch
     << gregorian_seconds * @usec_per_second :: int64 >>

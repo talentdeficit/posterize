@@ -6,7 +6,7 @@ defmodule Posterize.Extensions.Interval do
   @usec_per_second 1000000
 
   def encode(_, {{hour, min, sec}, days, months}, _, _)
-  when days >= 0 and is_integer(days) and months >= 0 and is_integer(months) and hour in 0..23 and min in 0..59 and sec in 0..59 do
+  when days in -2147483647..2147483647 and months in -2147483647..2147483647 and hour in -23..23 and min in -59..59 and sec in -59..59 do
     time = :calendar.time_to_seconds({hour, min, sec})
     << time * @usec_per_second :: int64, days :: int32, months :: int32 >>
   end
