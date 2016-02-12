@@ -53,6 +53,65 @@ defmodule QueryTest do
   end
 end
 
+defmodule PrepareTest do
+  use ExUnit.Case, async: true
+  import Postgrex.TestHelper
+
+  @moduletag :integration
+
+  setup do
+    opts = [ database: "postgrex_test", backoff_type: :stop ]
+    {:ok, pid} = :posterize.start_link(opts)
+    {:ok, [pid: pid]}
+  end
+
+  test "prepare and execute a query", context do
+    assert (%Postgrex.Query{} = query) = prepare("prepared_statement", "SELECT $1::text")
+    assert [["hallo world"]] = execute(query, ["hallo world"])
+    assert [["hallo to me"]] = execute(query, ["hallo to me"])
+  end
+end
+
+defmodule CloseTest do
+  use ExUnit.Case, async: true
+  import Postgrex.TestHelper
+
+  @moduletag :integration
+
+  setup do
+    opts = [ database: "postgrex_test", backoff_type: :stop ]
+    {:ok, pid} = :posterize.start_link(opts)
+    {:ok, [pid: pid]}
+  end
+
+  test "close a query after preparing and executing", context do
+    assert (%Postgrex.Query{} = query) = prepare("prepared_statement", "SELECT $1::text")
+    assert [["hallo world"]] = execute(query, ["hallo world"])
+    assert :ok = close(query)
+  end
+end
+
+defmodule TransactionTest do
+  use ExUnit.Case, async: true
+  import Postgrex.TestHelper
+
+  @moduletag :integration
+
+  setup do
+    opts = [ database: "postgrex_test", backoff_type: :stop ]
+    {:ok, pid} = :posterize.start_link(opts)
+    {:ok, [pid: pid]}
+  end
+
+  test "run a query in a transaction", context do
+      query = fn(conn) ->
+        {:ok, res} = :posterize.query(conn, "SELECT true", [])
+        res.rows
+      end
+      assert {:ok, [[true]]} = transaction(query)
+  end
+end
+
 defmodule Posterize.Integration.Integer.Time.Test do
   use ExUnit.Case, async: true
   import Postgrex.TestHelper
