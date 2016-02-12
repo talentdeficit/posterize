@@ -1,5 +1,7 @@
-defmodule Posterize.Extensions.Integer.DateTime do
-  @moduledoc false
+defmodule :posterize_xt_integer_datetime do
+  @moduledoc """
+  a posterize datetime extension compatible with erlang system time apis
+  """
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension,
     [send: "timestamp_send", send: "timestamptz_send"]
@@ -8,6 +10,10 @@ defmodule Posterize.Extensions.Integer.DateTime do
   @gs_epoch :calendar.datetime_to_gregorian_seconds({{2000, 1, 1}, {0, 0, 0}})
   @usec_per_second 1000000
 
+  @doc """
+  encodes erlang system time into the postgres `timestamp`
+  or `timestamp_tz` type
+  """
   def encode(type_info, ns, types, opts) when is_integer(ns) do
     encode(type_info, {:native, ns}, types, opts)
   end
@@ -21,6 +27,13 @@ defmodule Posterize.Extensions.Integer.DateTime do
     raise ArgumentError, encode_msg(type_info, value, "datetime")
   end
 
+  @doc """
+  decodes a postgres `timestamp` or `timestamp_tz` type into erlang
+  system time
+
+  this always returns time in `native` units. use `erlang:convert_time_unit/3`
+  to convert to other units
+  """
   def decode(_, << microsecs :: int64 >>, _, _) do
     adjustment = (@gs_epoch - @unix_epoch) * @usec_per_second
     :erlang.convert_time_unit(microsecs + adjustment, :micro_seconds, :native)

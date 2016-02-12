@@ -61,7 +61,7 @@ defmodule Posterize.Integration.Integer.Time.Test do
 
   setup do
     opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link([extensions: Posterize.Extensions.Integer.Utils.stack] ++ opts)
+    {:ok, pid} = :posterize.start_link([extensions: :posterize_xt_integer_utils.stack] ++ opts)
     {:ok, [pid: pid]}
   end
 

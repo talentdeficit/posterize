@@ -1,10 +1,10 @@
-defmodule Posterize.Extensions.Integer.Utils do
+defmodule :posterize_xt_integer_utils do
   @moduledoc false
   
   def stack do
-    [{Posterize.Extensions.Integer.Date, []},
-     {Posterize.Extensions.Integer.Time, []},
-     {Posterize.Extensions.Integer.DateTime, []},
-     {Posterize.Extensions.Integer.Interval, []}]
+    [{:posterize_xt_integer_date, []},
+     {:posterize_xt_integer_time, []},
+     {:posterize_xt_integer_datetime, []},
+     {:posterize_xt_integer_interval, []}]
   end
 end
