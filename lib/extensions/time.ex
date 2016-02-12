@@ -1,10 +1,15 @@
 defmodule :posterize_xt_time do
-  @moduledoc false
+  @moduledoc """
+  a posterize time extension compatible with the `calendar` module
+  """
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension, [send: "time_send", send: "timetz_send"]
 
   @usec_per_second 1000000
 
+  @doc """
+  encodes the `calendar:time()` type into the postgres `time` or `timetz` type
+  """
   def encode(_, {hour, min, sec}, _, _)
   when hour in 0..23 and min in 0..59 and sec in 0..59 do
     time = :calendar.time_to_seconds({hour, min, sec})
@@ -14,6 +19,9 @@ defmodule :posterize_xt_time do
     raise ArgumentError, encode_msg(type_info, value, "time")
   end
 
+  @doc """
+  decodes a postgres `date` type into the `calendar:time()` type
+  """
   def decode(_, << microsecs :: int64 >>, _, _) do
     secs = div(microsecs, @usec_per_second)
     :calendar.seconds_to_time(secs)
