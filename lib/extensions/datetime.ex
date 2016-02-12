@@ -23,7 +23,7 @@ defmodule Posterize.Extensions.DateTime do
     :calendar.gregorian_seconds_to_datetime(secs + @gs_epoch)
   end
 
-  def encode_msg(%Postgrex.TypeInfo{type: type}, observed, expected) do
+  defp encode_msg(%Postgrex.TypeInfo{type: type}, observed, expected) do
     "Postgrex expected #{expected} that can be encoded/cast to " <>
     "type #{inspect type}, got #{inspect observed}. Please make sure the " <>
     "value you are passing matches the definition in your table or in your " <>

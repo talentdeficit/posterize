@@ -19,7 +19,7 @@ defmodule Posterize.Extensions.Interval do
     {:calendar.seconds_to_time(secs), days, months}
   end
 
-  def encode_msg(%Postgrex.TypeInfo{type: type}, observed, expected) do
+  defp encode_msg(%Postgrex.TypeInfo{type: type}, observed, expected) do
     "Postgrex expected #{expected} that can be encoded/cast to " <>
     "type #{inspect type}, got #{inspect observed}. Please make sure the " <>
     "value you are passing matches the definition in your table or in your " <>
