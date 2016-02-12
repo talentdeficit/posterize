@@ -52,3 +52,30 @@ defmodule QueryTest do
     assert [[{{15, 3, 48}, 15, 7}]] = query("SELECT $1::interval", [{{15, 3, 48}, 15, 7}])
   end
 end
+
+defmodule Posterize.Integration.Integer.Time.Test do
+  use ExUnit.Case, async: true
+  import Postgrex.TestHelper
+
+  @moduletag :integration
+
+  setup do
+    opts = [ database: "postgrex_test", backoff_type: :stop ]
+    {:ok, pid} = :posterize.start_link([extensions: :posterize_xt_integer_utils.stack] ++ opts)
+    {:ok, [pid: pid]}
+  end
+
+  test "decode datetime types", context do
+    assert [[{1979, 6, 21}]] = query("SELECT '1979-06-21'::date", [])
+    assert [[{15, 3, 48}]] = query("SELECT '15:03:48'::time", [])
+    assert [[{{1979, 6, 21}, {15, 3, 48}}]] = query("SELECT '1979-06-21T15:03:48'::timestamp", [])
+    assert [[{{15, 3, 48}, 15, 7}]] = query("SELECT '7 months 15 days 15 hours 3 minutes 48 seconds'::interval", [])
+  end
+
+  test "encode datetime types", context do
+    assert [[{1979, 6, 21}]] = query("SELECT $1::date", [{1979, 6, 21}])
+    assert [[{15, 3, 48}]] = query("SELECT $1::time", [{15, 3, 48}])
+    assert [[{{1979, 6, 21}, {15, 3, 48}}]] = query("SELECT $1::timestamp", [{{1979, 6, 21}, {15, 3, 48}}])
+    assert [[{{15, 3, 48}, 15, 7}]] = query("SELECT $1::interval", [{{15, 3, 48}, 15, 7}])
+  end
+end
