@@ -57,7 +57,13 @@ defmodule :posterize do
   """
   @spec start_link(Keyword.t) :: {:ok, pid} | {:error, Postgrex.Error.t | term}
   def start_link(opts) do
-    Postgrex.start_link(opts)
+    datetime = [
+      {Posterize.Extensions.Date, []},
+      {Posterize.Extensions.Time, []},
+      {Posterize.Extensions.DateTime, []},
+      {Posterize.Extensions.Interval, []}
+    ]
+    Postgrex.start_link([extensions: datetime] ++ opts)
   end
 
 
