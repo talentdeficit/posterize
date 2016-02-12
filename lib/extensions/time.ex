@@ -1,4 +1,4 @@
-defmodule Posterize.Extensions.Time do
+defmodule :posterize_xt_time do
   @moduledoc false
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension, [send: "time_send", send: "timetz_send"]

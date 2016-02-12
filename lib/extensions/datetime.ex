@@ -1,4 +1,4 @@
-defmodule Posterize.Extensions.DateTime do
+defmodule :posterize_xt_datetime do
   @moduledoc false
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension,

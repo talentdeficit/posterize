@@ -1,4 +1,4 @@
-defmodule Posterize.Extensions.Interval do
+defmodule :posterize_xt_interval do
   @moduledoc false
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension, send: "interval_send"

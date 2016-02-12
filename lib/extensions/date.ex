@@ -1,4 +1,4 @@
-defmodule Posterize.Extensions.Date do
+defmodule :posterize_xt_date do
   @moduledoc false
   import Postgrex.BinaryUtils
   use Postgrex.BinaryExtension, send: "date_send"
