@@ -143,6 +143,6 @@ defmodule Posterize.Integration.Integer.Time.Test do
     units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
     assert [[units]] == query("SELECT $1::timestamp", [units])
     units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] = query("SELECT $1::interval", [units])
+    assert [[units]] == query("SELECT $1::interval", [units])
   end
 end
