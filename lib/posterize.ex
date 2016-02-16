@@ -189,7 +189,7 @@ defmodule :posterize do
     Postgrex.execute(conn, query, params, opts)
   end
 
-  def execute(conn, query, params), do: execute(conn, query, params)
+  def execute(conn, query, params), do: execute(conn, query, params, [])
 
 
   @doc """
