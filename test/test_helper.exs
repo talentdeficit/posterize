@@ -1,3 +1,20 @@
+exclude = if System.get_env("PGVERSION") == "8.4" do
+  [requires_notify_payload: true]
+else
+  []
+end
+
+version_exclusions = case System.get_env("PGVERSION") do
+  v when is_binary(v) ->
+    ["8.4", "9.0", "9.1", "9.2", "9.3", "9.4"]
+    |> Enum.filter(fn x -> x > v end)
+    |> Enum.map(&{:min_pg_version, &1})
+  _ ->
+    []
+end
+
+ExUnit.configure exclude: version_exclusions ++ exclude
+
 ExUnit.start
 {:ok, _} = :application.ensure_all_started(:crypto)
 
