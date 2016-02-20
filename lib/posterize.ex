@@ -58,7 +58,9 @@ defmodule :posterize do
   def start_link(opts) do
     pool = Keyword.get(opts, :pool)
     opts = Keyword.update(opts, :pool, DBConnection.Connection, &pool_mod/1)
-    {:ok, conn} = Postgrex.start_link(opts ++ [extensions: :posterize_xt_datetime_utils.stack])
+    {:ok, conn} = Postgrex.start_link(
+      opts ++ [extensions: [{:posterize_xt_jsx, []}] ++ :posterize_xt_datetime_utils.stack]
+    )
     case pool do
       :sbroker -> {:ok, {:sbroker, conn}}
       :poolboy -> {:ok, {:poolboy, conn}}
