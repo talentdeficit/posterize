@@ -124,12 +124,14 @@ defmodule UserExtensionTest do
     {:ok, [pid: pid]}
   end
 
+  @tag min_pg_version: "9.4"
   test "user specified extensions are used for decoding", context do
     units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
     assert [[units]] == query("SELECT '15:03:48'::time", [])
     assert [[%{"key" => "value"}]] == query("SELECT '{\"key\":\"value\"}'::json", [])
   end
 
+  @tag min_pg_version: "9.4"
   test "user specified extensions are used for encoding", context do
     units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
     assert [[units]] == query("SELECT $1::time", [units])
