@@ -112,6 +112,31 @@ defmodule TransactionTest do
   end
 end
 
+defmodule UserExtensionTest do
+  use ExUnit.Case, async: true
+  import Postgrex.TestHelper
+
+  @moduletag :integration
+
+  setup do
+    opts = [ database: "postgrex_test", backoff_type: :stop ]
+    {:ok, pid} = :posterize.start_link([extensions: :posterize_xt_integer_utils.stack] ++ opts)
+    {:ok, [pid: pid]}
+  end
+
+  test "user specified extensions are used for decoding", context do
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT '15:03:48'::time", [])
+    assert [[%{"key" => "value"}]] == query("SELECT '{\"key\":\"value\"}'::json", [])
+  end
+
+  test "user specified extensions are used for encoding", context do
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT $1::time", [units])
+    assert [[%{"key" => "value"}]] == query("SELECT $1::json", [%{"key" => "value"}])
+  end
+end
+
 defmodule Posterize.Integration.Integer.Time.Test do
   use ExUnit.Case, async: true
   import Postgrex.TestHelper
