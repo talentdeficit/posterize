@@ -1,4 +1,9 @@
 %{"connection": {:hex, :connection, "1.0.2"},
   "db_connection": {:hex, :db_connection, "0.2.3"},
   "decimal": {:hex, :decimal, "1.1.1"},
-  "postgrex": {:hex, :postgrex, "0.11.0"}}
+  "earmark": {:hex, :earmark, "0.2.1"},
+  "ex_doc": {:hex, :ex_doc, "0.11.4"},
+  "jsx": {:hex, :jsx, "2.8.0"},
+  "poolboy": {:hex, :poolboy, "1.5.1"},
+  "postgrex": {:hex, :postgrex, "0.11.0"},
+  "sbroker": {:hex, :sbroker, "0.7.0"}}

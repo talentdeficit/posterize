@@ -9,7 +9,7 @@ defmodule :posterize do
   a connection reference is used when making multiple requests to the same
   connection, see `transaction/3` and `after_connect` in `start_link/1`.
   """
-  @type conn :: DBConnection.conn
+  @type conn :: DBConnection.conn | {:sbroker, DBConnection.conn} | {:poolboy, DBConnection.conn}
 
   @pool_timeout 5000
   @timeout 5000
@@ -51,21 +51,28 @@ defmodule :posterize do
     backoff and to stop (see `backoff`, default: `jitter`)
     * `transactions` - set to `strict` to error on unexpected transaction
     state, otherwise set to `naive` (default: `naive`);
-    * `pool` - the pool module to use, see `DBConnection`, it must be
-    included with all requests if not the default (default:
-    `DBConnection.Connection`);
+    * `pool` - the pool module to use, either `sbroker` or `poolboy`;
+    * `pool_size` - the max size of the connection pool (default: 10);
   """
   @spec start_link(Keyword.t) :: {:ok, pid} | {:error, Postgrex.Error.t | term}
   def start_link(opts) do
-    datetime = [
-      {:posterize_xt_date, []},
-      {:posterize_xt_time, []},
-      {:posterize_xt_datetime, []},
-      {:posterize_xt_interval, []}
-    ]
-    Postgrex.start_link([extensions: datetime] ++ opts)
+    pool = Keyword.get(opts, :pool)
+    opts = Keyword.update(opts, :pool, DBConnection.Connection, &pool_mod/1)
+
+    opts = Keyword.update(opts, :extensions, default_xts, &(&1 ++ default_xts))
+    
+    {:ok, conn} = Postgrex.start_link(opts)
+    case pool do
+      :sbroker -> {:ok, {:sbroker, conn}}
+      :poolboy -> {:ok, {:poolboy, conn}}
+      _ -> {:ok, conn}
+    end
   end
 
+  defp pool_mod(:sbroker), do: DBConnection.Sojourn
+  defp pool_mod(:poolboy), do: DBConnection.Poolboy
+  
+  defp default_xts, do: [{:posterize_xt_jsx, []}] ++ :posterize_xt_datetime_utils.stack
 
   @doc """
   runs an (extended) query and returns the result as `{ok, Result}`
@@ -98,9 +105,17 @@ defmodule :posterize do
       posterize:query(Conn, "SELECT id FROM posts WHERE title like $1", [<<"%my%">>]).
   """
   @spec query(conn, iodata, list, Keyword.t) :: {:ok, Postgrex.Result.t} | {:error, String.t}
-  def query(conn, statement, params, opts \\ []) do
+  def query({:sbroker, conn}, statement, params, opts) do
+    Postgrex.query(conn, statement, params, [pool: DBConnection.Sojourn] ++ opts)
+  end
+  def query({:poolboy, conn}, statement, params, opts) do
+    Postgrex.query(conn, statement, params, [pool: DBConnection.Poolboy] ++ opts)
+  end
+  def query(conn, statement, params, opts) do
     Postgrex.query(conn, statement, params, opts)
   end
+
+  def query(conn, statement, params), do: query(conn, statement, params, [])
 
 
   @doc """
@@ -126,10 +141,17 @@ defmodule :posterize do
       {ok, Query} = posterize:prepare(Conn, "CREATE TABLE posts (id serial, title text)").
   """
   @spec prepare(conn, iodata, iodata, Keyword.t) :: {:ok, Postgrex.Query.t} | {:error, Postgrex.Error.t}
-  def prepare(conn, name, statement, opts \\ []) do
+  def prepare({:sbroker, conn}, name, statement, opts) do
+    Postgrex.prepare(conn, name, statement, [pool: DBConnection.Sojourn] ++ opts)
+  end
+  def prepare({:poolboy, conn}, name, statement, opts) do
+    Postgrex.prepare(conn, name, statement, [pool: DBConnection.Poolboy] ++ opts)
+  end
+  def prepare(conn, name, statement, opts) do
     Postgrex.prepare(conn, name, statement, opts)
   end
 
+  def prepare(conn, name, statement), do: prepare(conn, name, statement, [])
 
   @doc """
   runs an (extended) prepared query and returns the result as
@@ -162,9 +184,17 @@ defmodule :posterize do
   """
   @spec execute(conn, Postgrex.Query.t, list, Keyword.t) ::
     {:ok, Postgrex.Result.t} | {:error, Postgrex.Error.t}
-  def execute(conn, query, params, opts \\ []) do
+  def execute({:sbroker, conn}, query, params, opts) do
+    Postgrex.execute(conn, query, params, [pool: DBConnection.Sojourn] ++ opts)
+  end
+  def execute({:poolboy, conn}, query, params, opts) do
+    Postgrex.execute(conn, query, params, [pool: DBConnection.Poolboy] ++ opts)
+  end
+  def execute(conn, query, params, opts) do
     Postgrex.execute(conn, query, params, opts)
   end
+
+  def execute(conn, query, params), do: execute(conn, query, params, [])
 
 
   @doc """
@@ -185,14 +215,22 @@ defmodule :posterize do
     `start_link/1`, see `DBConnection`
   
   ## examples
- 
+
       {ok, Query} = posterize:prepare(Conn, "CREATE TABLE posts (id serial, title text)"),
       ok = posterize:close(Conn, Query).
   """
   @spec close(conn, Postgrex.Query.t, Keyword.t) :: :ok | {:error, Postgrex.Error.t}
-  def close(conn, query, opts \\ []) do
+  def close({:sbroker, conn}, query, opts) do
+    Postgrex.close(conn, query, [pool: DBConnection.Sojourn] ++ opts)
+  end
+  def close({:poolboy, conn}, query, opts) do
+    Postgrex.close(conn, query, [pool: DBConnection.Poolboy] ++ opts)
+  end
+  def close(conn, query, opts) do
     Postgrex.close(conn, query, opts)
   end
+
+  def close(conn, query), do: close(conn, query, [])
 
 
   @doc """
@@ -229,15 +267,23 @@ defmodule :posterize do
   requests inside the transaction function
   
   ## example
-      
+
       Fun = fun(Conn) -> posterize:query(Conn, "SELECT title FROM posts", []) end,
       {ok, Result} = posterize:transaction(Conn, Fun).
   """
   @spec transaction(conn, ((DBConnection.t) -> result), Keyword.t) ::
     {:ok, result} | {:error, any} when result: var
-  def transaction(conn, fun, opts \\ []) do
+  def transaction({:sbroker, conn}, fun, opts) do
+    Postgrex.transaction(conn, fun, [pool: DBConnection.Sojourn] ++ opts)
+  end
+  def transaction({:poolboy, conn}, fun, opts) do
+    Postgrex.transaction(conn, fun, [pool: DBConnection.Poolboy] ++ opts)
+  end 
+  def transaction(conn, fun, opts) do
     Postgrex.transaction(conn, fun, opts)
   end
+
+  def transaction(conn, fun), do: transaction(conn, fun, [])
 
   @doc """
   rollback a transaction, does not return

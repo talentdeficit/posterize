@@ -20,7 +20,7 @@ defmodule :posterize_xt_time do
   end
 
   @doc """
-  decodes a postgres `date` type into the `calendar:time()` type
+  decodes a postgres `time` or `timetz` type into the `calendar:time()` type
   """
   def decode(_, << microsecs :: int64 >>, _, _) do
     secs = div(microsecs, @usec_per_second)
