@@ -11,7 +11,7 @@ defmodule QueryTest do
   end
 
   test "decode basic types", context do
-    assert [[nil]] = query("SELECT NULL", [])
+    assert [[:null]] = query("SELECT NULL", [])
     assert [[true, false]] = query("SELECT true, false", [])
     assert [["e"]] = query("SELECT 'e'::char", [])
     assert [["ẽ"]] = query("SELECT 'ẽ'::char", [])
@@ -26,7 +26,7 @@ defmodule QueryTest do
   end
 
   test "encode basic types", context do
-    assert [[nil, nil]] = query("SELECT $1::text, $2::int", [nil, nil])
+    assert [[:null, :null]] = query("SELECT $1::text, $2::int", [:null, :null])
     assert [[true, false]] = query("SELECT $1::bool, $2::bool", [true, false])
     assert [["ẽ"]] = query("SELECT $1::char", ["ẽ"])
     assert [[42]] = query("SELECT $1::int", [42])
