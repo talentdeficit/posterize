@@ -57,6 +57,9 @@ defmodule :posterize do
   def start_link(opts) do
     opts = Keyword.put(opts, :pool, DBConnection.Sojourn)
 
+    # use :null as the default null value, instead of nil
+    opts = Keyword.update(opts, :null, :null, &(&1))
+
     opts = Keyword.update(opts, :extensions, default_xts, &(&1 ++ default_xts))
     
     {:ok, conn} = Postgrex.start_link(opts)
