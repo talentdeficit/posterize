@@ -51,26 +51,17 @@ defmodule :posterize do
     backoff and to stop (see `backoff`, default: `jitter`)
     * `transactions` - set to `strict` to error on unexpected transaction
     state, otherwise set to `naive` (default: `naive`);
-    * `pool` - the pool module to use, either `sbroker` or `poolboy`;
     * `pool_size` - the max size of the connection pool (default: 10);
   """
   @spec start_link(Keyword.t) :: {:ok, pid} | {:error, Postgrex.Error.t | term}
   def start_link(opts) do
-    pool = Keyword.get(opts, :pool)
-    opts = Keyword.update(opts, :pool, DBConnection.Connection, &pool_mod/1)
+    opts = Keyword.put(opts, :pool, DBConnection.Sojourn)
 
     opts = Keyword.update(opts, :extensions, default_xts, &(&1 ++ default_xts))
     
     {:ok, conn} = Postgrex.start_link(opts)
-    case pool do
-      :sbroker -> {:ok, {:sbroker, conn}}
-      :poolboy -> {:ok, {:poolboy, conn}}
-      _ -> {:ok, conn}
-    end
+    {:ok, {:sbroker, conn}}
   end
-
-  defp pool_mod(:sbroker), do: DBConnection.Sojourn
-  defp pool_mod(:poolboy), do: DBConnection.Poolboy
   
   defp default_xts, do: :posterize_xt_datetime_utils.stack
 
@@ -91,8 +82,6 @@ defmodule :posterize do
     * `timeout` - query request timeout (default: `#{@timeout}`);
     * `decode_mapper` - fun to map each row in the result to a term after
     decoding, (default: `fun(X) -> X end`);
-    * `pool` - the pool module to use, must match that set on
-    `start_link/1`, see `DBConnection`
 
   ## examples
 
@@ -133,8 +122,6 @@ defmodule :posterize do
     (default: `#{@pool_timeout}`)
     * `queue` - Whether to wait for connection in a queue (default: `true`);
     * `timeout` - Prepare request timeout (default: `#{@timeout}`);
-    * `pool` - The pool module to use, must match that set on
-    `start_link/1`, see `DBConnection`
 
   ## examples
 
@@ -171,8 +158,6 @@ defmodule :posterize do
     * `timeout` - Execute request timeout (default: `#{@timeout}`);
     * `decode_mapper` - Fun to map each row in the result to a term after
     decoding, (default: `fun(X) -> X end`);
-    * `pool` - The pool module to use, must match that set on
-    `start_link/1`, see `DBConnection`
 
   ## Examples
 
@@ -211,8 +196,6 @@ defmodule :posterize do
     (default: `#{@pool_timeout}`)
     * `queue` - Whether to wait for connection in a queue (default: `true`);
     * `timeout` - Close request timeout (default: `#{@timeout}`);
-    * `pool` - The pool module to use, must match that set on
-    `start_link/1`, see `DBConnection`
   
   ## examples
 
@@ -256,8 +239,6 @@ defmodule :posterize do
     (default: `#{@pool_timeout}`)
     * `queue` - Whether to wait for connection in a queue (default: `true`);
     * `timeout` - Transaction timeout (default: `#{@timeout}`);
-    * `pool` - The pool module to use, must match that set on
-    `start_link/1`, see `DBConnection`
     * `mode` - Set to `savepoint` to use savepoints instead of an SQL
     transaction, otherwise set to `transaction` (default: `transaction`);
   
