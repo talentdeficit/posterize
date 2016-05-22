@@ -72,7 +72,7 @@ defmodule :posterize do
   defp pool_mod(:sbroker), do: DBConnection.Sojourn
   defp pool_mod(:poolboy), do: DBConnection.Poolboy
   
-  defp default_xts, do: [{:posterize_xt_jsx, []}] ++ :posterize_xt_datetime_utils.stack
+  defp default_xts, do: :posterize_xt_datetime_utils.stack
 
   @doc """
   runs an (extended) query and returns the result as `{ok, Result}`
