@@ -1,4 +1,4 @@
-# posterize
+# posterize (0.11.0)
 
 [![Build Status](https://travis-ci.org/talentdeficit/posterize.svg?branch=master)](https://travis-ci.org/talentdeficit/posterize)
 
@@ -10,7 +10,7 @@ documentation at [hexdocs](http://hexdocs.pm/posterize/)
 
     postgres        erlang
     ----------      ------
-    NULL            nil
+    NULL            null
     bool            true | false
     char            <<"é">>
     int             42
@@ -25,9 +25,8 @@ documentation at [hexdocs](http://hexdocs.pm/posterize/)
 ## todo
 
 * ranges, numerics, time zones and all the other missing data types
-* figure out how to encode/decode `undefined` instead of `nil`
 * more tests, especially integration
 
 ## acknowledgments
 
-this thing definotely wouldn't exist without [ericmj](https://github.com/ericmj) and [fishcakez](https://github.com/fishcakez). all credit to them
+this thing definitely wouldn't exist without [ericmj](https://github.com/ericmj) and [fishcakez](https://github.com/fishcakez). all credit to them
