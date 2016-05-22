@@ -120,7 +120,7 @@ defmodule UserExtensionTest do
 
   setup do
     opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link([extensions: :posterize_xt_integer_utils.stack] ++ opts)
+    {:ok, pid} = :posterize.start_link([extensions: [{:posterize_xt_jsx, []}] ++ :posterize_xt_integer_utils.stack] ++ opts)
     {:ok, [pid: pid]}
   end
 
@@ -183,7 +183,7 @@ defmodule Posterize.Integration.JSON.Test do
 
   setup do
     opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link(opts)
+    {:ok, pid} = :posterize.start_link([extensions: [{:posterize_xt_jsx, []}]] ++ opts)
     {:ok, [pid: pid]}
   end
 
