@@ -20,6 +20,7 @@ before_script:
   - sudo service postgresql restart
 env:
   global:
+    - MIX_ENV=dev
     - PGUSER=postgres
   matrix:
     - PGVERSION=8.4
