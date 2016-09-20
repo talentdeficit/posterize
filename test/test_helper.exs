@@ -17,6 +17,7 @@ ExUnit.configure exclude: version_exclusions ++ exclude
 
 ExUnit.start
 {:ok, _} = :application.ensure_all_started(:crypto)
+{:ok, _} = :application.ensure_all_started(:sbroker)
 
 run_cmd = fn cmd ->
   key = :ecto_setup_cmd_output

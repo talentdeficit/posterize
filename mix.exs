@@ -1,7 +1,7 @@
 defmodule Posterize.Mixfile do
   use Mix.Project
 
-  @version "0.11.2"
+  @version "0.12.0"
 
   def project do
     [app: :posterize,
@@ -20,10 +20,10 @@ defmodule Posterize.Mixfile do
   end
 
   defp deps do
-    [{:postgrex, "~> 0.11.2"},
-     {:sbroker, "~> 1.0.0-beta.3"},
-     {:jsx, "~> 2.8", only: :dev},
-     {:ex_doc, "~> 0.11", only: :dev}]
+    [{:postgrex, "~> 0.12.0"},
+     {:sbroker, "~> 1.0.0-beta3"},
+     {:jsx, "~> 2.8"},
+     {:ex_doc, "~> 0.12", only: :dev}]
   end
 
   defp description do
