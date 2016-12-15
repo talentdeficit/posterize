@@ -1,3 +1,8 @@
+:application.stop(:sasl)
+:application.set_env(:sasl, :sasl_error_logger, false)
+:application.start(:sasl)
+
+
 exclude = if System.get_env("PGVERSION") == "8.4" do
   [requires_notify_payload: true]
 else

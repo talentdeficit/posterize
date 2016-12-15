@@ -40,16 +40,22 @@ defmodule QueryTest do
 
   test "decode datetime types", context do
     assert [[{1979, 6, 21}]] = query("SELECT '1979-06-21'::date", [])
-    assert [[{15, 3, 48}]] = query("SELECT '15:03:48'::time", [])
-    assert [[{{1979, 6, 21}, {15, 3, 48}}]] = query("SELECT '1979-06-21T15:03:48'::timestamp", [])
-    assert [[{{15, 3, 48}, 15, 7}]] = query("SELECT '7 months 15 days 15 hours 3 minutes 48 seconds'::interval", [])
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT '15:03:48'::time", [])
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT '15:03:48-0000'::timetz", [])
+    units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
+    assert [[units]] == query("SELECT '1979-06-21T15:03:48Z'::timestamp", [])
   end
 
   test "encode datetime types", context do
     assert [[{1979, 6, 21}]] = query("SELECT $1::date", [{1979, 6, 21}])
-    assert [[{15, 3, 48}]] = query("SELECT $1::time", [{15, 3, 48}])
-    assert [[{{1979, 6, 21}, {15, 3, 48}}]] = query("SELECT $1::timestamp", [{{1979, 6, 21}, {15, 3, 48}}])
-    assert [[{{15, 3, 48}, 15, 7}]] = query("SELECT $1::interval", [{{15, 3, 48}, 15, 7}])
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT $1::time", [units])
+    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
+    assert [[units]] == query("SELECT $1::timetz", [units])
+    units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
+    assert [[units]] == query("SELECT $1::timestamp", [units])
   end
 end
 
@@ -112,69 +118,6 @@ defmodule TransactionTest do
   end
 end
 
-defmodule UserExtensionTest do
-  use ExUnit.Case, async: true
-  import Postgrex.TestHelper
-
-  @moduletag :integration
-
-  setup do
-    opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link([extensions: [{:posterize_xt_jsx, []}] ++ :posterize_xt_integer_utils.stack] ++ opts)
-    {:ok, [pid: pid]}
-  end
-
-  @tag min_pg_version: "9.4"
-  test "user specified extensions are used for decoding", context do
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT '15:03:48'::time", [])
-    assert [[%{"key" => "value"}]] == query("SELECT '{\"key\":\"value\"}'::json", [])
-  end
-
-  @tag min_pg_version: "9.4"
-  test "user specified extensions are used for encoding", context do
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT $1::time", [units])
-    assert [[%{"key" => "value"}]] == query("SELECT $1::json", [%{"key" => "value"}])
-  end
-end
-
-defmodule Posterize.Integration.Integer.Time.Test do
-  use ExUnit.Case, async: true
-  import Postgrex.TestHelper
-
-  @moduletag :integration
-
-  setup do
-    opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link([extensions: :posterize_xt_integer_utils.stack] ++ opts)
-    {:ok, [pid: pid]}
-  end
-
-  test "decode datetime types", context do
-    units = :erlang.convert_time_unit(298771200000000, :micro_seconds, :native)
-    assert [[units]] == query("SELECT '1979-06-21'::date", [])
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT '15:03:48'::time", [])
-    units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
-    assert [[units]] == query("SELECT '1979-06-21T15:03:48Z'::timestamp", [])
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT '15 hours 3 minutes 48 seconds'::interval", [])
-  end
-
-  test "encode datetime types", context do
-    units = :erlang.convert_time_unit(298771200000000, :micro_seconds, :native)
-    assert [[units]] == query("SELECT $1::date", [units])
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT $1::time", [units])
-    units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
-    assert [[units]] == query("SELECT $1::timestamp", [units])
-    units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
-    assert [[units]] == query("SELECT $1::interval", [units])
-  end
-end
-
-
 defmodule Posterize.Integration.JSON.Test do
   use ExUnit.Case, async: true
   import Postgrex.TestHelper
@@ -183,7 +126,7 @@ defmodule Posterize.Integration.JSON.Test do
 
   setup do
     opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link([extensions: [{:posterize_xt_jsx, []}]] ++ opts)
+    {:ok, pid} = :posterize.start_link(opts)
     {:ok, [pid: pid]}
   end
 
