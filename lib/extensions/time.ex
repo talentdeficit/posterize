@@ -2,39 +2,40 @@ defmodule :posterize_xt_time do
   @moduledoc false
   @behaviour Postgrex.Extension
   import Postgrex.BinaryUtils, warn: false
+  use Postgrex.BinaryExtension, [send: "time_send"]
 
-  def init(_), do: :undefined
+  def init(opts) do
+    case Keyword.get(opts, :units) do
+      nil                       -> :native
+      units when is_atom(units) -> units
+    end
+  end
 
-  def matching(_),
-    do: [type: "time"]
-
-  def format(_),
-    do: :binary
-
-  def encode(_) do
+  def encode(units) do
     quote location: :keep do
-      {unit, count} when is_atom(unit) and is_integer(count) ->
-        :posterize_xt_time.do_encode(unit, count)
-      count when is_integer(count) ->
-        :posterize_xt_time.do_encode(:native, count)
+      time when is_integer(time) ->
+        :posterize_xt_time.do_encode(unquote(units), time)
       other ->
-        raise ArgumentError, Postgrex.Utils.encode_msg(other, "an integer time in native units or a `{Units, Count}` tuple")
+        raise ArgumentError, Postgrex.Utils.encode_msg(
+          other,
+          "an integer representing time (default units: `native`)"
+        )
     end
   end
 
-  def decode(_) do
+  def do_encode(units, count) do
+    usecs = :erlang.convert_time_unit(count, units, :micro_seconds)
+    << 8 :: int32, usecs :: int64 >>
+  end
+
+  def decode(units) do
     quote location: :keep do
-      <<8 :: int32, microsecs :: int64>> ->
-        :posterize_xt_time.do_decode(microsecs)
+      << 8 :: int32, time :: int64 >> ->
+        :posterize_xt_time.do_decode(unquote(units), time)
     end
   end
 
-  def do_encode(unit, count) do
-    usecs = :erlang.convert_time_unit(count, unit, :micro_seconds)
-    <<8 :: int32, usecs :: int64>>
-  end
-
-  def do_decode(microsecs) do
-    :erlang.convert_time_unit(microsecs, :micro_seconds, :native)
+  def do_decode(units, time) do
+    :erlang.convert_time_unit(time, :micro_seconds, units)
   end
 end

@@ -2,46 +2,64 @@ defmodule :posterize_xt_timestamp do
   @moduledoc false
   @behaviour Postgrex.Extension
   import Postgrex.BinaryUtils, warn: false
+  use Postgrex.BinaryExtension, [send: "timestamp_send"]
 
   @unix_epoch :calendar.datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}})
   @gs_epoch :calendar.datetime_to_gregorian_seconds({{2000, 1, 1}, {0, 0, 0}})
-  @usec_per_second 1000000
+  @adjustment :erlang.convert_time_unit(@gs_epoch - @unix_epoch, :seconds, :microsecond)
 
-  def init(_), do: :undefined
+  @min_timestamp -211810204800000000
+  @max_timestamp 9223371331201000000
 
-  def matching(_),
-    do: [type: "timestamp"]
+  @infinity 9223372036854775807
+  @neg_infinity -9223372036854775808
 
-  def format(_),
-    do: :binary
+  def init(opts) do
+    case Keyword.get(opts, :units) do
+      nil                       -> :native
+      units when is_atom(units) -> units
+    end
+  end
 
-  def encode(_) do
+  def encode(units) do
     quote location: :keep do
-      {unit, count} when is_atom(unit) and is_integer(count) ->
-        :posterize_xt_timestamp.do_encode(unit, count)
-      count when is_integer(count) ->
-        :posterize_xt_timestamp.do_encode(:native, count)
+      ts when is_integer(ts) or ts == :infinity or ts == :'-infinity' ->
+        :posterize_xt_timestamp.do_encode(unquote(units), ts)
       other ->
-        raise ArgumentError, Postgrex.Utils.encode_msg(other, "an integer time in native units or a `{Units, Count}` tuple")
+        raise ArgumentError, Postgrex.Utils.encode_msg(
+          other,
+          "an integer representing time since unix epoch in utc"
+        )
     end
   end
 
-  def decode(_) do
+  def do_encode(_units, :infinity) do
+      << 8 :: int32, @infinity :: int64 >>
+  end
+  def do_encode(_units, :'-infinity') do
+      << 8 :: int32, @neg_infinity :: int64 >>
+  end
+  def do_encode(units, timestamp) do
+    case :erlang.convert_time_unit(timestamp, units, :microsecond) - @adjustment do
+      ts when ts >= @min_timestamp and ts <= @max_timestamp ->
+        << 8 :: int32, ts :: int64 >>
+      _ ->
+        raise ArgumentError, "timestamp is outside postgres' allowable range"
+    end
+  end
+
+  def decode(units) do
     quote location: :keep do
-      <<8 :: int32, microsecs :: int64>> ->
-        :posterize_xt_timestamp.do_decode(microsecs)
+      << 8 :: int32, microsecs :: int64 >> ->
+        :posterize_xt_timestamp.do_decode(unquote(units), microsecs)
     end
   end
 
-  def do_encode(unit, count) do
-    seconds = :erlang.convert_time_unit(count, unit, :seconds)
-    datetime = :calendar.gregorian_seconds_to_datetime(seconds + @unix_epoch)
-    gregorian_seconds = :calendar.datetime_to_gregorian_seconds(datetime) - @gs_epoch
-    <<8 :: int32, (gregorian_seconds * @usec_per_second) :: int64>>
-  end
-
-  def do_decode(microsecs) do
-    adjustment = (@gs_epoch - @unix_epoch) * @usec_per_second
-    :erlang.convert_time_unit(microsecs + adjustment, :micro_seconds, :native)
+  def do_decode(units, microsecs) do
+    case microsecs do
+      @neg_infinity -> :'-infinity'
+      @infinity -> :infinity
+      _ -> :erlang.convert_time_unit(microsecs + @adjustment, :microsecond, units)
+    end
   end
 end
