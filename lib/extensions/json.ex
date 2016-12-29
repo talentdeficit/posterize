@@ -2,16 +2,11 @@ defmodule :posterize_xt_json do
   @moduledoc false
   @behaviour Postgrex.Extension
   import Postgrex.BinaryUtils, warn: false
+  use Postgrex.BinaryExtension, [send: "json_send"]
 
   def init(opts) do
     Keyword.get(opts, :decode_binary, :copy)
   end
-
-  def matching(_),
-    do: [type: "json"]
-
-  def format(_),
-    do: :binary
 
   def encode(_) do
     quote location: :keep do

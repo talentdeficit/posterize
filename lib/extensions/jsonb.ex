@@ -2,16 +2,11 @@ defmodule :posterize_xt_jsonb do
   @moduledoc false
   @behaviour Postgrex.Extension
   import Postgrex.BinaryUtils, warn: false
+  use Postgrex.BinaryExtension, [send: "jsonb_send"]
 
   def init(opts) do
     Keyword.get(opts, :decode_binary, :copy)
   end
-
-  def matching(_),
-    do: [type: "jsonb"]
-
-  def format(_),
-    do: :binary
 
   def encode(_) do
     quote location: :keep do
