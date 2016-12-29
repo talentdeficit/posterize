@@ -20,7 +20,7 @@ defmodule Posterize.Mixfile do
   end
 
   defp deps do
-    [{:postgrex, "~> 0.13.0-rc"},
+    [{:postgrex, "~> 0.13.0"},
      {:sbroker, "~> 1.0.0"},
      {:jsx, "~> 2.8"},
      {:ex_doc, "~> 0.12", only: :dev}]
