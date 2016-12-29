@@ -101,7 +101,7 @@ defmodule Postgrex.TestHelper do
       case :posterize.query(var!(context)[:pid], unquote(stat), unquote(params), unquote(opts)) do
         {:ok, %Postgrex.Result{rows: nil}} -> :ok
         {:ok, %Postgrex.Result{rows: rows}} -> rows
-        {:error, %Postgrex.Error{} = err} -> err
+        {:error, err} -> err
       end
     end
   end
@@ -110,7 +110,7 @@ defmodule Postgrex.TestHelper do
     quote do
       case :posterize.prepare(var!(context)[:pid], unquote(name), unquote(stat), unquote(opts)) do
         {:ok, %Postgrex.Query{} = query} -> query
-        {:error, %Postgrex.Error{} = err} -> err
+        {:error, err} -> err
       end
     end
   end
@@ -120,7 +120,7 @@ defmodule Postgrex.TestHelper do
       case :posterize.execute(var!(context)[:pid], unquote(query), unquote(params), unquote(opts)) do
         {:ok, %Postgrex.Result{rows: nil}} -> :ok
         {:ok, %Postgrex.Result{rows: rows}} -> rows
-        {:error, %Postgrex.Error{} = err} -> err
+        {:error, err} -> err
       end
     end
   end
@@ -129,7 +129,7 @@ defmodule Postgrex.TestHelper do
     quote do
       case :posterize.close(var!(context)[:pid], unquote(query), unquote(opts)) do
         :ok -> :ok
-        {:error, %Postgrex.Error{} = err} -> err
+        {:error, err} -> err
       end
     end
   end
