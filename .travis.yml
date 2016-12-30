@@ -1,8 +1,8 @@
 language: elixir
 elixir:
-  - 1.2.1
+  - 1.3.4
 otp_release:
-  - 18.2
+  - 19.1
 cache: apt
 before_install:
   - sudo service postgresql stop
@@ -20,7 +20,6 @@ before_script:
   - sudo service postgresql restart
 env:
   global:
-    - MIX_ENV=dev
     - PGUSER=postgres
   matrix:
     - PGVERSION=8.4
@@ -30,6 +29,12 @@ env:
     - PGVERSION=9.3
     - PGVERSION=9.4
     - PGVERSION=9.5
+    - PGVERSION=9.6
+matrix:
+  include:
+    - elixir: 1.4.0-rc.0
+      otp_release: 19.1
+      env: PGVERSION=9.6
 notifications:
   recipients:
     - alisdairsullivan@yahoo.ca

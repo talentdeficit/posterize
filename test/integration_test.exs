@@ -39,21 +39,21 @@ defmodule QueryTest do
   end
 
   test "decode date types", context do
-    assert [[{-4713, 1, 1}]] = query("SELECT 'Jan 1, 4713 BC'::date", [])
-    assert [[{-4713, 2, 29}]] = query("SELECT 'Feb 29, 4713 BC'::date", [])
-    assert [[{-401, 2, 29}]] = query("SELECT 'Feb 29, 401 BC'::date", [])
-    assert [[{-1, 2, 29}]] = query("SELECT 'Feb 29, 1 BC'::date", [])
-    assert [[{400, 2, 29}]] = query("SELECT 'Feb 29, 400'::date", [])
-    assert [[{1979, 6, 21}]] = query("SELECT '1979-06-21'::date", [])
+    assert [[{ -4713, 1, 1 }]] = query("SELECT 'Jan 1, 4713 BC'::date", [])
+    assert [[{ -4713, 2, 29 }]] = query("SELECT 'Feb 29, 4713 BC'::date", [])
+    assert [[{ -401, 2, 29 }]] = query("SELECT 'Feb 29, 401 BC'::date", [])
+    assert [[{ -1, 2, 29 }]] = query("SELECT 'Feb 29, 1 BC'::date", [])
+    assert [[{ 400, 2, 29 }]] = query("SELECT 'Feb 29, 400'::date", [])
+    assert [[{ 1979, 6, 21 }]] = query("SELECT '1979-06-21'::date", [])
   end
 
   test "encode date types", context do
-    assert [[{-4713, 1, 1}]] = query("SELECT $1::date", [{-4713, 1, 1}])
-    assert [[{-4713, 2, 29}]] = query("SELECT $1::date", [{-4713, 2, 29}])
-    assert [[{-401, 2, 29}]] = query("SELECT $1::date", [{-401, 2, 29}])
-    assert [[{-1, 2, 29}]] = query("SELECT $1::date", [{-1, 2, 29}])
-    assert [[{400, 2, 29}]] = query("SELECT $1::date", [{400, 2, 29}])
-    assert [[{1979, 6, 21}]] = query("SELECT $1::date", [{1979, 6, 21}])
+    assert [[{ -4713, 1, 1 }]] = query("SELECT $1::date", [{ -4713, 1, 1 }])
+    assert [[{ -4713, 2, 29 }]] = query("SELECT $1::date", [{ -4713, 2, 29 }])
+    assert [[{ -401, 2, 29 }]] = query("SELECT $1::date", [{ -401, 2, 29 }])
+    assert [[{ -1, 2, 29 }]] = query("SELECT $1::date", [{ -1, 2, 29 }])
+    assert [[{ 400, 2, 29 }]] = query("SELECT $1::date", [{ 400, 2, 29 }])
+    assert [[{ 1979, 6, 21 }]] = query("SELECT $1::date", [{ 1979, 6, 21 }])
   end
 
   test "decode time + timestamp types", context do
@@ -61,9 +61,9 @@ defmodule QueryTest do
     assert [[units]] == query("SELECT '15:03:48'::time", [])
     pos_offset = :erlang.convert_time_unit(-60, :seconds, :native)
     neg_offset = :erlang.convert_time_unit(60, :seconds, :native)
-    assert [[{units, 0}]] == query("SELECT '15:03:48-00:00'::timetz", [])
-    assert [[{units, pos_offset}]] == query("SELECT '15:03:48+00:01'::timetz", [])
-    assert [[{units, neg_offset}]] == query("SELECT '15:03:48-00:01'::timetz", [])
+    assert [[{ units, 0 }]] == query("SELECT '15:03:48-00:00'::timetz", [])
+    assert [[{ units, pos_offset }]] == query("SELECT '15:03:48+00:01'::timetz", [])
+    assert [[{ units, neg_offset }]] == query("SELECT '15:03:48-00:01'::timetz", [])
     units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
     assert [[units]] == query("SELECT '1979-06-21T15:03:48Z'::timestamp", [])
     assert [[units]] == query("SELECT '1979-06-21T15:03:48-00:00'::timestamptz", [])
@@ -81,10 +81,10 @@ defmodule QueryTest do
     units = :erlang.convert_time_unit((15 * 3600) + (3 * 60) + 48, :seconds, :native)
     pos_offset = :erlang.convert_time_unit(60, :seconds, :native)
     neg_offset = :erlang.convert_time_unit(-60, :seconds, :native)
-    assert [[{units, 0}]] == query("SELECT $1::timetz", [units])
-    assert [[{units, 0}]] == query("SELECT $1::timetz", [{units, 0}])
-    assert [[{units, pos_offset}]] == query("SELECT $1::timetz", [{units, pos_offset}])
-    assert [[{units, neg_offset}]] == query("SELECT $1::timetz", [{units, neg_offset}])
+    assert [[{ units, 0 }]] == query("SELECT $1::timetz", [units])
+    assert [[{ units, 0 }]] == query("SELECT $1::timetz", [{ units, 0 }])
+    assert [[{ units, pos_offset }]] == query("SELECT $1::timetz", [{ units, pos_offset }])
+    assert [[{ units, neg_offset }]] == query("SELECT $1::timetz", [{ units, neg_offset }])
     units = :erlang.convert_time_unit(298771200000000 + (15 * 3600000000) + (3 * 60000000) + 48000000, :micro_seconds, :native)
     assert [[units]] == query("SELECT $1::timestamp", [units])
     assert [[units]] == query("SELECT $1::timestamptz", [units])
@@ -108,6 +108,7 @@ defmodule QueryTest do
     assert [[%{ months: 13, days: 8, microseconds: 3661000000 }]] == query("SELECT '1 year 1 month 1 week 1 day 1 hour 1 minute 1 second'::interval", [])
   end
 
+  @tag min_pg_version: "9.2"
   test "encode ranges", context do
     assert [[:empty]] == query("SELECT $1::int4range", [%{ lower: 1, upper: 1, bounds: :'[)' }])
     assert [[%{ bounds: :'()' }]] == query("SELECT $1::int4range", [%{ bounds: :'()' }])
@@ -121,6 +122,7 @@ defmodule QueryTest do
     assert [[%{ lower: 946684800000000000, upper: 978307200000000000, bounds: :'()' }]] == query("SELECT $1::tsrange", [%{ lower: 946684800000000000, upper: 978307200000000000, bounds: :'()' }])
   end
 
+  @tag min_pg_version: "9.2"
   test "decode ranges", context do
     assert [[:empty]] == query("SELECT '[1,1)'::int4range", [])
     assert [[%{ lower: 1, upper: 3, bounds: :'[)' }]] == query("SELECT '[1,3)'::int4range", [])
