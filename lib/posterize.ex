@@ -13,7 +13,6 @@ defmodule :posterize do
 
   @pool_timeout 5000
   @timeout 15000
-  @max_rows 500
 
   ### PUBLIC API ###
 
