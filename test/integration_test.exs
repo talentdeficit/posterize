@@ -135,6 +135,46 @@ defmodule QueryTest do
     assert [[%{ lower: 946684800000000000, upper: 978307200000000000, bounds: :'[)' }]] == query("SELECT '[2000-01-01,2001-01-01)'::tsrange", [])
     assert [[%{ lower: 946684800000000000, upper: 978307200000000000, bounds: :'()' }]] == query("SELECT '(2000-01-01,2001-01-01)'::tsrange", [])
   end
+
+  @tag min_pg_version: "9.4"
+  test "decode json types", context do
+    assert [["true"]] == query("SELECT 'true'::json", [])
+    assert [["1"]] == query("SELECT '1'::json", [])
+    assert [["1.0"]] == query("SELECT '1.0'::json", [])
+    assert [["\"hallo world\""]] == query("SELECT '\"hallo world\"'::json", [])
+    assert [["{\"key\":\"value\"}"]] == query("SELECT '{\"key\":\"value\"}'::json", [])
+    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT '[true,1,1.0,\"hallo world\"]'::json", [])
+  end
+
+  @tag min_pg_version: "9.4"
+  test "encode json types", context do
+    assert [["true"]] == query("SELECT $1::json", ["true"])
+    assert [["1"]] == query("SELECT $1::json", ["1"])
+    assert [["1.0"]] == query("SELECT $1::json", ["1.0"])
+    assert [["\"hallo world\""]] == query("SELECT $1::json", ["\"hallo world\""])
+    assert [["{\"key\":\"value\"}"]] == query("SELECT $1::json", ["{\"key\":\"value\"}"])
+    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT $1::json", ["[true,1,1.0,\"hallo world\"]"])
+  end
+
+  @tag min_pg_version: "9.4"
+  test "decode jsonb types", context do
+    assert [["true"]] == query("SELECT 'true'::json", [])
+    assert [["1"]] == query("SELECT '1'::json", [])
+    assert [["1.0"]] == query("SELECT '1.0'::json", [])
+    assert [["\"hallo world\""]] == query("SELECT '\"hallo world\"'::json", [])
+    assert [["{\"key\":\"value\"}"]] == query("SELECT '{\"key\":\"value\"}'::json", [])
+    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT '[true,1,1.0,\"hallo world\"]'::json", [])
+  end
+
+  @tag min_pg_version: "9.4"
+  test "encode jsonb types", context do
+    assert [["true"]] == query("SELECT $1::json", ["true"])
+    assert [["1"]] == query("SELECT $1::json", ["1"])
+    assert [["1.0"]] == query("SELECT $1::json", ["1.0"])
+    assert [["\"hallo world\""]] == query("SELECT $1::json", ["\"hallo world\""])
+    assert [["{\"key\":\"value\"}"]] == query("SELECT $1::json", ["{\"key\":\"value\"}"])
+    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT $1::json", ["[true,1,1.0,\"hallo world\"]"])
+  end
 end
 
 defmodule PrepareTest do
@@ -193,58 +233,5 @@ defmodule TransactionTest do
         res.rows
       end
       assert {:ok, [[true]]} = transaction(query)
-  end
-end
-
-defmodule Posterize.Integration.JSON.Test do
-  use ExUnit.Case, async: true
-  import Postgrex.TestHelper
-
-  @moduletag :integration
-
-  setup do
-    opts = [ database: "postgrex_test", backoff_type: :stop ]
-    {:ok, pid} = :posterize.start_link(opts)
-    {:ok, [pid: pid]}
-  end
-
-  @tag min_pg_version: "9.4"
-  test "decode json types", context do
-    assert [[true]] == query("SELECT 'true'::json", [])
-    assert [[1]] == query("SELECT '1'::json", [])
-    assert [[1.0]] == query("SELECT '1.0'::json", [])
-    assert [["hallo world"]] == query("SELECT '\"hallo world\"'::json", [])
-    assert [[%{"key" => "value"}]] == query("SELECT '{\"key\":\"value\"}'::json", [])
-    assert [[[true, 1, 1.0, "hallo world"]]] == query("SELECT '[true, 1, 1.0, \"hallo world\"]'::json", [])
-  end
-
-  @tag min_pg_version: "9.4"
-  test "encode json types", context do
-    assert [[true]] == query("SELECT $1::json", [true])
-    assert [[1]] == query("SELECT $1::json", [1])
-    assert [[1.0]] == query("SELECT $1::json", [1.0])
-    assert [["hallo world"]] == query("SELECT $1::json", ["hallo world"])
-    assert [[%{"key" => "value"}]] == query("SELECT $1::json", [%{"key" => "value"}])
-    assert [[[true, 1, 1.0, "hallo world"]]] == query("SELECT $1::json", [[true, 1, 1.0, "hallo world"]])
-  end
-
-  @tag min_pg_version: "9.4"
-  test "decode jsonb types", context do
-    assert [[true]] == query("SELECT 'true'::jsonb", [])
-    assert [[1]] == query("SELECT '1'::jsonb", [])
-    assert [[1.0]] == query("SELECT '1.0'::jsonb", [])
-    assert [["hallo world"]] == query("SELECT '\"hallo world\"'::jsonb", [])
-    assert [[%{"key" => "value"}]] == query("SELECT '{\"key\":\"value\"}'::jsonb", [])
-    assert [[[true, 1, 1.0, "hallo world"]]] == query("SELECT '[true, 1, 1.0, \"hallo world\"]'::jsonb", [])
-  end
-
-  @tag min_pg_version: "9.4"
-  test "encode jsonb types", context do
-    assert [[true]] == query("SELECT $1::jsonb", [true])
-    assert [[1]] == query("SELECT $1::jsonb", [1])
-    assert [[1.0]] == query("SELECT $1::jsonb", [1.0])
-    assert [["hallo world"]] == query("SELECT $1::jsonb", ["hallo world"])
-    assert [[%{"key" => "value"}]] == query("SELECT $1::jsonb", [%{"key" => "value"}])
-    assert [[[true, 1, 1.0, "hallo world"]]] == query("SELECT $1::jsonb", [[true, 1, 1.0, "hallo world"]])
   end
 end

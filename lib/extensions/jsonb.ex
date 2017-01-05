@@ -10,9 +10,8 @@ defmodule :posterize_xt_jsonb do
 
   def encode(_) do
     quote location: :keep do
-      map ->
-        data = :jsx.encode(map)
-        [<<(IO.iodata_length(data)+1) :: int32, 1>> | data]
+      json when is_binary(json) ->
+        [<<(IO.iodata_length(json) + 1) :: int32, 1>> | json]
     end
   end
 
@@ -20,15 +19,14 @@ defmodule :posterize_xt_jsonb do
     quote location: :keep do
       <<len :: int32, data :: binary-size(len)>> ->
         <<1, json :: binary>> = data
-        copy = :binary.copy(json)
-        :jsx.decode(copy, [:return_maps])
+        :binary.copy(json)
     end
   end
   def decode(:reference) do
     quote location: :keep do
       <<len :: int32, data :: binary-size(len)>> ->
         <<1, json :: binary>> = data
-        :jsx.decode(json, [:return_maps])
+        json
     end
   end
 end
