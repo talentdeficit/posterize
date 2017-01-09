@@ -158,22 +158,22 @@ defmodule QueryTest do
 
   @tag min_pg_version: "9.4"
   test "decode jsonb types", context do
-    assert [["true"]] == query("SELECT 'true'::json", [])
-    assert [["1"]] == query("SELECT '1'::json", [])
-    assert [["1.0"]] == query("SELECT '1.0'::json", [])
-    assert [["\"hallo world\""]] == query("SELECT '\"hallo world\"'::json", [])
-    assert [["{\"key\":\"value\"}"]] == query("SELECT '{\"key\":\"value\"}'::json", [])
-    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT '[true,1,1.0,\"hallo world\"]'::json", [])
+    assert [["true"]] == query("SELECT 'true'::jsonb", [])
+    assert [["1"]] == query("SELECT '1'::jsonb", [])
+    assert [["1.0"]] == query("SELECT '1.0'::jsonb", [])
+    assert [["\"hallo world\""]] == query("SELECT '\"hallo world\"'::jsonb", [])
+    assert [["{\"key\": \"value\"}"]] == query("SELECT '{\"key\":\"value\"}'::jsonb", [])
+    assert [["[true, 1, 1.0, \"hallo world\"]"]] == query("SELECT '[true,1,1.0,\"hallo world\"]'::jsonb", [])
   end
 
   @tag min_pg_version: "9.4"
   test "encode jsonb types", context do
-    assert [["true"]] == query("SELECT $1::json", ["true"])
-    assert [["1"]] == query("SELECT $1::json", ["1"])
-    assert [["1.0"]] == query("SELECT $1::json", ["1.0"])
-    assert [["\"hallo world\""]] == query("SELECT $1::json", ["\"hallo world\""])
-    assert [["{\"key\":\"value\"}"]] == query("SELECT $1::json", ["{\"key\":\"value\"}"])
-    assert [["[true,1,1.0,\"hallo world\"]"]] == query("SELECT $1::json", ["[true,1,1.0,\"hallo world\"]"])
+    assert [["true"]] == query("SELECT $1::jsonb", ["true"])
+    assert [["1"]] == query("SELECT $1::jsonb", ["1"])
+    assert [["1.0"]] == query("SELECT $1::jsonb", ["1.0"])
+    assert [["\"hallo world\""]] == query("SELECT $1::jsonb", ["\"hallo world\""])
+    assert [["{\"key\": \"value\"}"]] == query("SELECT $1::jsonb", ["{\"key\":\"value\"}"])
+    assert [["[true, 1, 1.0, \"hallo world\"]"]] == query("SELECT $1::jsonb", ["[true,1,1.0,\"hallo world\"]"])
   end
 end
 
