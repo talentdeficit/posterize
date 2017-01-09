@@ -26,7 +26,7 @@ defmodule :posterize_xt_date do
     quote location: :keep do
       { year, month, day } ->
         :posterize_xt_date.do_encode({ year, month, day })
-      date when date == :infinity or date == :neg_infinity ->
+      date when date == :infinity or date == :'-infinity' ->
         :posterize_xt_date.do_encode(date)
       other -> :posterize_xt_date.bad_date(other)
     end
@@ -74,7 +74,7 @@ defmodule :posterize_xt_date do
   def bad_date(date) do
     raise ArgumentError, Postgrex.Utils.encode_msg(
       date,
-      "a date tuple (`{ Year, Month, Day }`) representing a valid date, the atom 'infinity' or the atom 'neg_infinity'"
+      "a date tuple (`{ Year, Month, Day }`) representing a valid date, the atom 'infinity' or the atom '-infinity'"
     )
   end
 end
