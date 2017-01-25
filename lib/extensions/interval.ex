@@ -1,45 +1,44 @@
 defmodule :posterize_xt_interval do
-  @moduledoc """
-  a posterize interval extension
-
-  intervals are represented by a `{calendar:time(), days, months}` tuple
-  """
-  import Postgrex.BinaryUtils
+  @moduledoc false
+  import Postgrex.BinaryUtils, warn: false
   use Postgrex.BinaryExtension, send: "interval_send"
 
-  @usec_per_second 1000000
-
-  @doc """
-  encodes a `{calendar:time(), days, month}` tuple into the postgres `interval`
-  type
-
-  any component of an interval can be positive or negative. a net negative interval
-  represents a negative adjustment to a timestamp
-  """
-  def encode(_, {{hour, min, sec}, days, months}, _, _)
-  when days in -2147483647..2147483647 and months in -2147483647..2147483647 and hour in -23..23 and min in -59..59 and sec in -59..59 do
-    time = :calendar.time_to_seconds({hour, min, sec})
-    << time * @usec_per_second :: int64, days :: int32, months :: int32 >>
-  end
-  def encode(type_info, value, _, _) do
-    raise ArgumentError, encode_msg(type_info, value, "interval")
+  def encode(_) do
+    quote location: :keep do
+      interval when is_map(interval) ->
+        :posterize_xt_interval.do_encode(interval)
+      other ->
+        raise ArgumentError, Postgrex.Utils.encode_msg(
+          other,
+          "a map describing an interval in years, months, weeks, days, hours, minutes, seconds and/or microseconds"
+        )
+    end
   end
 
-  @doc """
-  decodes a postgres `interval` type into a `{calendar:time(), days, months}` tuple
-
-  any component of an interval can be positive or negative. a net negative interval
-  represents a negative adjustment to a timestamp
-  """
-  def decode(_, << usec :: int64, days :: int32, months :: int32 >>, _, _) do
-    secs = div(usec, @usec_per_second)
-    {:calendar.seconds_to_time(secs), days, months}
+  def do_encode(interval) do
+    months = (Map.get(interval, :years, 0) * 12) + Map.get(interval, :months, 0)
+    days = (Map.get(interval, :weeks, 0) * 7) + Map.get(interval, :days, 0)
+    microseconds = (Map.get(interval, :hours, 0) * 60 * 60 * 1000000) +
+      (Map.get(interval, :minutes, 0) * 60 * 1000000) +
+      (Map.get(interval, :seconds, 0) * 1000000) +
+      Map.get(interval, :microseconds, 0)
+    << 16 :: int32, microseconds :: int64, days :: int32, months :: int32 >>
   end
 
-  defp encode_msg(%Postgrex.TypeInfo{type: type}, observed, expected) do
-    "Postgrex expected #{expected} that can be encoded/cast to " <>
-    "type #{inspect type}, got #{inspect observed}. Please make sure the " <>
-    "value you are passing matches the definition in your table or in your " <>
-    "query or convert the value accordingly."
+  def decode(_) do
+    quote location: :keep do
+      << 16 :: int32, microseconds :: int64, days :: int32, months :: int32 >> ->
+        :posterize_xt_interval.do_decode(months, days, microseconds)
+    end
   end
+
+  def do_decode(months, days, microseconds) do
+    %{} |> maybe_months(months) |> maybe_days(days) |> Map.put(:microseconds, microseconds)
+  end
+
+  defp maybe_months(interval, 0), do: interval
+  defp maybe_months(interval, months), do: Map.put(interval, :months, months)
+
+  defp maybe_days(interval, 0), do: interval
+  defp maybe_days(interval, days), do: Map.put(interval, :days, days)
 end

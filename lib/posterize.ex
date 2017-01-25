@@ -13,7 +13,6 @@ defmodule :posterize do
 
   @pool_timeout 5000
   @timeout 15000
-  @max_rows 500
 
   ### PUBLIC API ###
 
@@ -29,49 +28,36 @@ defmodule :posterize do
     * `username` - username (default: PGUSER env variable, then USER env var);
     * `password` - user password (default PGPASSWORD env variable);
     * `parameters` - proplist of connection parameters;
-    * `timeout` - connect timeout in milliseconds (default: `#{@timeout}`);
+    * `timeout` - socket receive timeout when idle in milliseconds (default: `#{@timeout}`);
+    * `connect_timeout` - socket connect timeout in milliseconds (default: `#{@timeout}`);
+    * `handshake_timeout` - connection handshake timeout in milliseconds (default: `#{@timeout}`);
     * `ssl` - set to `true` if ssl should be used (default: `false`);
     * `ssl_opts` - a list of ssl options, see ssl docs;
     * `socket_options` - options to be given to the underlying socket;
-    * `sync_connect` - block in `start_link/1` until connection is set up (default: `false`)
-    * `extensions` - a list of `{Module, Opts}` pairs where `Module` is
-    an implemention of the `Postgrex.Extension` behaviour and `Opts` are the
-    extension options;
-    * `decode_binary` - either `copy` to copy binary values when decoding with
-    default extensions that return binaries or `reference` to use a reference
-    counted binary of the binary received from the socket. referencing a
-    potentially larger binary can be more efficient if the binary value is going
-    to be garbage collected soon because a copy is avoided. however the larger
-    binary can not be garbage collected until all the refences are garbage
-    collected (defaults to `copy`);
     * `prepare` - how to prepare queries, either `named` to use named queries
-    or unnamed to force unnamed queries (default: `named`);
+    or `unnamed` to force unnamed queries. use `unnamed` when using a proxy like
+    pgbouncer that doesn't support named queries (default: `named`);
     * `transactions` - set to `strict` to error on unexpected transaction state,
     otherwise set to `naive` (default: `naive`);
-    * `pool` - the pool module to use, see `DBConnection` for pool dependent
-    options, this option must be included with all requests contacting the pool
-    if not `DBConnection.Connection` (default: `'Elixir.DBConnection.Sojourn'`);
-    * `null` - the atom to use as a stand in for postgres' `NULL` in encoding
-    and decoding (default: `null`);
 
     `Postgrex` (and posterize) use the `DBConnection` framework and support all
     `DBConnection` options. see `DBConnection` for more information
+
+  ## examples
+    1> {ok, Pid} = posterize:start_link([{database, <<"postgres">>}])
+    {ok, <0.62.0>}
   """
+
   @spec start_link(Keyword.t) :: {:ok, pid} | {:error, Postgrex.Error.t | term}
   def start_link(opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
-    # use :null as the default null value, instead of nil
-    opts = Keyword.put_new(opts, :null, :null)
-    # append default extensions after user extensions
-    opts = Keyword.update(opts, :extensions, default_xts, &(&1 ++ default_xts))
+    # use erlang friendly type module unless the user specifies another
+    opts = Keyword.put_new(opts, :types, :posterize_typemodule)
     
     Postgrex.start_link(opts)
   end
   
-  defp default_xts, do: :posterize_xt_datetime_utils.stack
-
-
   @doc """
   runs an (extended) query and returns the result as `{ok, Result}`
   or `{error, Error}` if there was a database error. parameters can be
@@ -88,15 +74,8 @@ defmodule :posterize do
     * `timeout` - query request timeout (default: `#{@timeout}`);
     * `decode_mapper` - fun to map each row in the result to a term after
     decoding, (default: `fun(X) -> X end`);
-    * `pool` - the pool module to use, must match that set on `start_link/1`
-    (default: `'Elixir.DBConnection.Sojourn'`);
-    * `null` - the atom to use as a stand in for postgres' `NULL` in encoding
-    and decoding (default: `null`);
     * `mode` - set to `savepoint` to use a savepoint to rollback to before the
     query on error, otherwise set to `transaction` (default: `transaction`);
-    * `copy_data` - whether to add copy data as a final parameter for use with
-    `COPY .. FROM STDIN` queries, if the query is not copying to the database
-    the data is sent but silently discarded (default: `false`);
 
   ## examples
 
@@ -109,17 +88,17 @@ defmodule :posterize do
       posterize:query(Conn, "SELECT id FROM posts WHERE title like $1", [<<"%my%">>]).
 
       posterize:query(Conn, "COPY posts TO STDOUT", []).
-
-      posterize:query(Conn, "COPY ints FROM STDIN", ["1\\n2\\n3\\n"], [copy_data: true])
   """
   @spec query(conn, iodata, list, Keyword.t) :: {:ok, Postgrex.Result.t} | {:error, String.t}
   def query(conn, statement, params, opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
-    # use :null as the default null value, instead of nil
-    opts = Keyword.put_new(opts, :null, :null)
 
-    Postgrex.query(conn, statement, params, opts)
+    try do
+      Postgrex.query(conn, statement, params, opts)
+    rescue
+      e in ArgumentError -> { :error, e.message }
+    end
   end
 
   def query(conn, statement, params), do: query(conn, statement, params, [])
@@ -131,7 +110,13 @@ defmodule :posterize do
   `execute/3,4`
 
   ## options
-  see `query/3,4`
+
+    * `pool_timeout` - time to wait in the queue for the connection
+    (default: `#{@pool_timeout}`)
+    * `queue` - whether to wait for connection in a queue (default: `true`);
+    * `timeout` - query request timeout (default: `#{@timeout}`);
+    * `mode` - set to `savepoint` to use a savepoint to rollback to before the
+    query on error, otherwise set to `transaction` (default: `transaction`);
 
   ## examples
 
@@ -139,10 +124,8 @@ defmodule :posterize do
   """
   @spec prepare(conn, iodata, iodata, Keyword.t) :: {:ok, Postgrex.Query.t} | {:error, Postgrex.Error.t}
   def prepare(conn, name, statement, opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
-    # use :null as the default null value, instead of nil
-    opts = Keyword.put_new(opts, :null, :null)
 
     Postgrex.prepare(conn, name, statement, opts)
   end
@@ -155,7 +138,15 @@ defmodule :posterize do
   or `{error, Error}` if there was an error
 
   ## options
-  see `query/3,4`
+
+    * `pool_timeout` - time to wait in the queue for the connection
+    (default: `#{@pool_timeout}`)
+    * `queue` - whether to wait for connection in a queue (default: `true`);
+    * `timeout` - query request timeout (default: `#{@timeout}`);
+    * `decode_mapper` - fun to map each row in the result to a term after
+    decoding, (default: `fun(X) -> X end`);
+    * `mode` - set to `savepoint` to use a savepoint to rollback to before the
+    query on error, otherwise set to `transaction` (default: `transaction`);
 
   ## examples
 
@@ -168,12 +159,14 @@ defmodule :posterize do
   @spec execute(conn, Postgrex.Query.t, list, Keyword.t) ::
     {:ok, Postgrex.Result.t} | {:error, Postgrex.Error.t}
   def execute(conn, query, params, opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
-    # use :null as the default null value, instead of nil
-    opts = Keyword.put_new(opts, :null, :null)
 
-    Postgrex.execute(conn, query, params, opts)
+    try do
+      Postgrex.execute(conn, query, params, opts)
+    rescue
+      e in ArgumentError -> { :error, e.message }
+    end
   end
 
   def execute(conn, query, params), do: execute(conn, query, params, [])
@@ -190,8 +183,6 @@ defmodule :posterize do
     (default: `#{@pool_timeout}`)
     * `queue` - whether to wait for connection in a queue (default: `true`);
     * `timeout` - query request timeout (default: `#{@timeout}`);
-    * `pool` - the pool module to use, must match that set on `start_link/1`
-    (default: `'Elixir.DBConnection.Sojourn'`);
     * `mode` - set to `savepoint` to use a savepoint to rollback to before the
     query on error, otherwise set to `transaction` (default: `transaction`);
 
@@ -202,7 +193,7 @@ defmodule :posterize do
   """
   @spec close(conn, Postgrex.Query.t, Keyword.t) :: :ok | {:error, Postgrex.Error.t}
   def close(conn, query, opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
 
     Postgrex.close(conn, query, opts)
@@ -234,8 +225,6 @@ defmodule :posterize do
     (default: `#{@pool_timeout}`)
     * `queue` - whether to wait for connection in a queue (default: `true`);
     * `timeout` - transaction timeout (default: `#{@timeout}`);
-    * `pool` - the pool module to use, must match that set on `start_link/1`
-    (default: `'Elixir.DBConnection.Sojourn'`);
     * `mode` - set to `savepoint` to use a savepoint to rollback to before the
     query on error, otherwise set to `transaction` (default: `transaction`);
   
@@ -252,7 +241,7 @@ defmodule :posterize do
   @spec transaction(conn, ((DBConnection.t) -> result), Keyword.t) ::
     {:ok, result} | {:error, any} when result: var
   def transaction(conn, fun, opts) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
 
     Postgrex.transaction(conn, fun, opts)
@@ -283,12 +272,10 @@ defmodule :posterize do
   ## options
 
     * `timeout` - Call timeout (default: `#{@timeout}`)
-    * `pool` - the pool module to use, must match that set on `start_link/1`
-    (default: `'Elixir.DBConnection.Sojourn'`);
   """
   @spec parameters(pid, Keyword.t) :: map
   def parameters(pid, opts \\ []) do
-    # use sbroker as the default pool
+    # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
 
     Postgrex.parameters(pid, opts)
