@@ -89,7 +89,7 @@ defmodule :posterize do
 
       posterize:query(Conn, "COPY posts TO STDOUT", []).
   """
-  @spec query(conn, iodata, list, Keyword.t) :: {:ok, Postgrex.Result.t} | {:error, String.t}
+  @spec query(conn, iodata, list, Keyword.t) :: {:ok, Postgrex.Result.t} | {:error, Postgrex.Error.t}
   def query(conn, statement, params, opts) do
     # use sbroker as the default pool unless the user specifies another
     opts = Keyword.put_new(opts, :pool, DBConnection.Sojourn)
@@ -97,7 +97,8 @@ defmodule :posterize do
     try do
       Postgrex.query(conn, statement, params, opts)
     rescue
-      e in ArgumentError -> { :error, e.message }
+      # this is most likely an exception in an encoder/decoder
+      e in ArgumentError -> { :error, e }
     end
   end
 
@@ -165,7 +166,8 @@ defmodule :posterize do
     try do
       Postgrex.execute(conn, query, params, opts)
     rescue
-      e in ArgumentError -> { :error, e.message }
+      # this is most likely an exception in an encoder/decoder
+      e in ArgumentError -> { :error, e }
     end
   end
 
