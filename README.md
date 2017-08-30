@@ -1,4 +1,4 @@
-# posterize (0.13.1)
+# posterize (0.13.3)
 
 [![Build Status](https://travis-ci.org/talentdeficit/posterize.svg?branch=master)](https://travis-ci.org/talentdeficit/posterize)
 
