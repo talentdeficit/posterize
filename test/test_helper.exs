@@ -2,35 +2,40 @@
 :application.set_env(:sasl, :sasl_error_logger, false)
 :application.start(:sasl)
 
-
-exclude = if System.get_env("PGVERSION") == "8.4" do
-  [requires_notify_payload: true]
-else
-  []
-end
-
-version_exclusions = case System.get_env("PGVERSION") do
-  v when is_binary(v) ->
-    ["8.4", "9.0", "9.1", "9.2", "9.3", "9.4"]
-    |> Enum.filter(fn x -> x > v end)
-    |> Enum.map(&{:min_pg_version, &1})
-  _ ->
+exclude =
+  if System.get_env("PGVERSION") == "8.4" do
+    [requires_notify_payload: true]
+  else
     []
-end
+  end
 
-ExUnit.configure exclude: version_exclusions ++ exclude
+version_exclusions =
+  case System.get_env("PGVERSION") do
+    v when is_binary(v) ->
+      ["8.4", "9.0", "9.1", "9.2", "9.3", "9.4"]
+      |> Enum.filter(fn x -> x > v end)
+      |> Enum.map(&{:min_pg_version, &1})
 
-ExUnit.start
+    _ ->
+      []
+  end
+
+ExUnit.configure(exclude: version_exclusions ++ exclude)
+
+ExUnit.start()
 {:ok, _} = :application.ensure_all_started(:crypto)
 {:ok, _} = :application.ensure_all_started(:sbroker)
 
 run_cmd = fn cmd ->
   key = :ecto_setup_cmd_output
   Process.put(key, "")
-  status = Mix.Shell.cmd(cmd, fn(data) ->
-    current = Process.get(key)
-    Process.put(key, current <> data)
-  end)
+
+  status =
+    Mix.Shell.cmd(cmd, fn data ->
+      current = Process.get(key)
+      Process.put(key, current <> data)
+    end)
+
   output = Process.get(key)
   Process.put(key, "")
   {status, output}
@@ -70,19 +75,23 @@ pg_path = System.get_env("PGPATH")
 cmds =
   cond do
     !pg_version || String.to_float(pg_version) >= 9.1 ->
-      cmds ++ [~s(psql -U postgres -d postgrex_test_with_schemas -c "CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA test;"),
-               ~s(psql -U postgres -d postgrex_test -c "CREATE EXTENSION IF NOT EXISTS hstore;")]
+      cmds ++ [
+        ~s(psql -U postgres -d postgrex_test_with_schemas -c "CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA test;"),
+        ~s(psql -U postgres -d postgrex_test -c "CREATE EXTENSION IF NOT EXISTS hstore;")
+      ]
+
     String.to_float(pg_version) == 9.0 ->
       cmds ++ [~s(psql -U postgres -d postgrex_test -f "#{pg_path}/contrib/hstore.sql")]
+
     true ->
       cmds
-end
+  end
 
 Enum.each(cmds, fn cmd ->
   {status, output} = run_cmd.(cmd)
 
   if status != 0 do
-    IO.puts """
+    IO.puts("""
     Command:
     #{cmd}
     error'd with:
@@ -90,7 +99,8 @@ Enum.each(cmds, fn cmd ->
     Please verify the user "postgres" exists and it has permissions to
     create databases and users. If not, you can create a new user with:
     $ createuser postgres -s --no-password
-    """
+    """)
+
     System.halt(1)
   end
 end)

@@ -1,6 +1,7 @@
 Postgrex.Types.define(
   :posterize_typemodule,
-  [ :posterize_xt_json,
+  [
+    :posterize_xt_json,
     :posterize_xt_jsonb,
     :posterize_xt_float4,
     :posterize_xt_float8,
